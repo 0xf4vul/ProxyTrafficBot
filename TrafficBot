@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Net;
+using System.Collections.Specialized;
+using System.IO;
+using System.Timers;
+using System.Threading;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
+using System.Text.RegularExpressions;
+namespace Proxy
+
+{
+	
+	public class Program
+	{
+		public static List<string> Ip = new List<string>();
+		public static List<string> Proxy = new List<string>();
+		public  static void ReadLines(List<string> _proxy)
+		{
+			Proxy = _proxy;
+			using (StreamReader reader = new StreamReader("C:/Users/mertc/source/repos/Proxy/Proxy/proxy.txt"))
+			{
+				while (true)
+				{
+					string line = reader.ReadLine();
+					if (line == null)
+						break;
+					if (Regex.IsMatch(line, ".*?[a-zA-Z].*?"))
+					{
+						Console.WriteLine(line);
+					}
+
+					string[] ipAddreses = line.Split(new[] {' '});
+					_proxy.Add(ipAddreses[0]);
+				}
+
+			}
+		}
+		static CookieContainer cookieContainer = new CookieContainer();
+		public static void isServerOnline()
+		{
+			string httpaddress = "";
+			System.Net.ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+			Boolean ret = false;
+			for (int i = 0; i < Proxy.Count; i++)
+			{
+				try
+				{
+					httpaddress += "http://" + Proxy[i];
+					Console.WriteLine(httpaddress);
+					WebProxy myproxy = new WebProxy();
+					HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create("http://www.tradeatlas.com/");
+					IWebProxy _proxy = req.Proxy;
+					myproxy.Credentials = new NetworkCredential("userName", "password");
+					Uri newUri = new Uri(httpaddress);
+					myproxy.Address = newUri;
+					HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+					if (resp.StatusCode == HttpStatusCode.OK)
+					{
+						// HTTP = 200 - Internet connection available, server online
+						ret = true;
+						Console.WriteLine("Connected To Server");
+						httpaddress = "";
+					}
+					else
+					{
+						Console.WriteLine("not connected");
+					}
+					resp.Close();
+					
+				}
+				catch (FormatException fe)
+				{
+					Console.WriteLine(fe.Message);
+					Console.WriteLine(fe.Data);
+					Console.WriteLine(fe.Source);
+				}
+				catch (WebException we)
+				{
+					// Exception - connection not available
+					Console.WriteLine("InternetUtils - isServerOnline - " + we.Status);
+					Console.WriteLine(we.Message);
+					Console.WriteLine(we.Response);
+					
+				}
+				
+			}
+			
+		}
+		static void Main(string[] args)
+		{
+			ReadLines(Proxy);
+			isServerOnline();
+			Thread.Sleep(1);
+			Console.Read();
+		}
+
+	}
+}
+
+
